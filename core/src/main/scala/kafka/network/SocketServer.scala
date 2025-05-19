@@ -756,9 +756,12 @@ private[kafka] abstract class Acceptor(val socketServer: SocketServer,
               // Assign the channel to the next processor (using round-robin) to which the
               // channel can be added without blocking. If newConnections queue is full on
               // all processors, block until the last one is able to accept a connection.
+
+              // 获取 processors 的数量
               var retriesLeft = synchronized(processors.length)
               var processor: Processor = null
               do {
+                // 每尝试一次都会减少 1 个次数
                 retriesLeft -= 1
                 processor = synchronized {
                   // adjust the index (if necessary) and retrieve the processor atomically for
@@ -766,7 +769,10 @@ private[kafka] abstract class Acceptor(val socketServer: SocketServer,
                   currentProcessorIndex = currentProcessorIndex % processors.length
                   processors(currentProcessorIndex)
                 }
+                // 这个 index 似乎 + 1 是否成功并不太重要，所以没有放到 同步块
                 currentProcessorIndex += 1
+
+                // 当这次已经扣完 retriesLeft 的时候，就阻塞
               } while (!assignNewConnection(socketChannel, processor, retriesLeft == 0))
             }
           } else
